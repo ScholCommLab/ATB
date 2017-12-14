@@ -37,7 +37,7 @@ class AltmetricHTTPException(AltmetricException):
 
 class Altmetric(object):
     """The API access class"""
-    def __init__(self, api_key=None, api_version = 'v1'):
+    def __init__(self, api_key=None, api_version='v1'):
         """Cache API key and version."""
         self._api_version = api_version
         if self._api_version != 'v1':
@@ -83,10 +83,8 @@ class Altmetric(object):
         if response.status_code == 200:
             try:
                 return response.json()
-            except ValueError as e:
-                raise JSONParseException(str(type(e))+str(e.args))
-        elif response.status_code in (404, 400):
-            return {}
+            except ValueError as ex:
+                raise JSONParseException(str(type(ex))+str(ex.args))
         else:
             raise AltmetricHTTPException(response.status_code)
 
@@ -101,9 +99,7 @@ class Altmetric(object):
         if response.status_code == 200:
             try:
                 return response.json()
-            except ValueError as e:
-                raise JSONParseException(str(type(e))+str(e.args))
-        elif response.status_code in (404, 400):
-            return {}
+            except ValueError as ex:
+                raise JSONParseException(str(type(ex))+str(ex.args))
         else:
             raise AltmetricHTTPException(response.status_code)

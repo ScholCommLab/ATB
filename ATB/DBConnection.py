@@ -18,26 +18,51 @@ class DBConnection(object):
         self.col_types = db_col_types
         self.unique = unique_col
 
-        cols = ', '.join(['{} {}'.format(col_n, col_t) for (col_n, col_t) in zip(self.col_names, self.col_types)])
+        col_name_type = ['{} {}'.format(n, t) for (n, t) in zip(self.col_names, self.col_types)]
+        cols = ', '.join(col_name_type)
 
         self.litecon = lite.connect(self.path)
 
         with self.litecon:
-        # set up SQL table
             litecur = self.litecon.cursor()
-
-            # the sample, with two columns for either the Tweet itself, or the error in trying to retrieve it
             litecur.execute("CREATE TABLE IF NOT EXISTS {} ({})".format(self.table, cols))
-            litecur.execute("CREATE UNIQUE INDEX IF NOT EXISTS {} ON {}({})".format("_".join([self.table, self.unique]), self.table, self.unique))
+            litecur.execute("CREATE UNIQUE INDEX IF NOT EXISTS {} ON {}({})".format(
+                "_".join([self.table, self.unique]), self.table, self.unique))
 
     def save_row(self, row):
         '''
-        Do the actual SQLite update with the info collected
+        Write a row
         '''
         with self.litecon:
             litecur = self.litecon.cursor()
             placeholders = ",".join([':' + col_n for col_n in self.col_names])
             row = ([row[key] for key in self.col_names])
-            litecur.execute("""INSERT OR IGNORE INTO {} ({}) VALUES ({})""".format(self.table,
-                                                                                   ", ".join(self.col_names),
-                                                                                   placeholders), row)
+            litecur.execute("""INSERT OR IGNORE INTO {} ({}) VALUES ({})""".format(
+                self.table, ", ".join(self.col_names), placeholders), row)
+
+    def update_row(self, row):
+        '''
+        Update a row
+        '''
+        with self.litecon:
+            litecur = self.litecon.cursor()
+            placeholders = ",".join([':' + col_n for col_n in self.col_names])
+            row = ([row[key] for key in self.col_names])
+            litecur.execute("""REPLACE INTO {} ({}) VALUES ({})""".format(
+                self.table, ", ".join(self.col_names), placeholders), row)
+
+    def select(self, columns):
+        '''
+        Select a single column or a list of columns
+        '''
+        with self.litecon:
+            if isinstance(columns, list):
+                litecur = self.litecon.cursor()
+                litecur.execute("SELECT {} FROM {}".format(", ".join(columns), self.table))
+            else:
+                self.litecon.row_factory = lambda cursor, row: row[0]
+                litecur = self.litecon.cursor()
+                litecur.execute("SELECT {} FROM {}".format(columns, self.table))
+            rows = litecur.fetchall()
+            self.litecon.row_factory = lambda cursor, row: row
+            return rows
